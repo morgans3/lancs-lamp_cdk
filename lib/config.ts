@@ -1,14 +1,12 @@
 // @ts-check
 import * as ec2 from "@aws-cdk/aws-ec2";
 import dynamodb = require("@aws-cdk/aws-dynamodb");
+import { _LOCAL } from "./localconfig";
 
-// START OF MINIMUM MANUAL CONFIGURATION
-// YOUR CONFIGURATION SETTINGS ARE NEEDED HERE
-const domain = "stewartmorganv2.com";
-const standardbuckets = ["lancs-lamp-results-landing"];
+const standardbuckets = ["lancs-lamp-results-landing-" + _LOCAL.mydomain];
 const spa_app = {
   name: "lamp_lancs",
-  domainName: domain,
+  domainName: _LOCAL.mydomain,
   siteSubDomain: "www",
   owner: "morgans3",
   githubrepo: "https://github.com/morgans3/lancs-lamp_frontend.git",
@@ -16,8 +14,8 @@ const spa_app = {
   branch: "main",
 };
 const api_app = {
-  name: "lamp_lancs",
-  domainName: domain,
+  name: "lamp_lancs_api",
+  domainName: _LOCAL.mydomain,
   siteSubDomain: "api",
   owner: "morgans3",
   githubrepo: "https://github.com/morgans3/lancs-lamp_api.git",
@@ -28,7 +26,6 @@ const api_app = {
   memory: 512,
   desired: 2,
 };
-// END OF MINIMUM MANUAL CONFIGURATION
 
 const standardDynamoTables = [
   {
@@ -45,12 +42,26 @@ const standardDynamoTables = [
       { name: "roleassignedDT", type: dynamodb.AttributeType.STRING, key: "secondary" },
     ],
   },
+  {
+    name: "componenttypes",
+    fields: [
+      { name: "type", type: dynamodb.AttributeType.STRING, key: "primary" },
+      { name: "createdDT", type: dynamodb.AttributeType.STRING, key: "secondary" },
+    ],
+  },
+  {
+    name: "pathways",
+    fields: [
+      { name: "test_pathway", type: dynamodb.AttributeType.STRING, key: "primary" },
+      { name: "createdDT", type: dynamodb.AttributeType.STRING, key: "secondary" },
+    ],
+  },
 ];
 
 export const _SETTINGS: any = {
   config: {
     isProduction: false,
-    domainName: domain,
+    domainName: _LOCAL.mydomain,
     bucketnames: standardbuckets,
     dynamodbtables: standardDynamoTables,
     spa_app,
@@ -58,8 +69,5 @@ export const _SETTINGS: any = {
     containerIPs: ["10.1.0.0/19"],
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.SMALL),
   },
-  dockerhub: {
-    username: "dockeruser",
-    password: "SETYOURACCOUNTHERE", // DO NOT COMMIT TO GIT
-  },
+  dockerhub: _LOCAL.dockerhub,
 };
