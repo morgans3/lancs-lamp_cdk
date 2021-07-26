@@ -10,7 +10,7 @@ export class BucketStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: new s3.BlockPublicAccess({ blockPublicAcls: true, blockPublicPolicy: true, ignorePublicAcls: true, restrictPublicBuckets: true }),
-      bucketName: props.settings.cleanseBucketName(props.bucket),
+      bucketName: props.functions.cleanseBucketName(props.bucket),
     });
 
     new cdk.CfnOutput(this, "bucketArn", { value: bucket.bucketArn });
