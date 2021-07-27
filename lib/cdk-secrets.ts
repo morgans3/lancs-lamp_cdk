@@ -9,6 +9,7 @@ const crypto = require("crypto");
 
 export class SecretsStack extends cdk.Stack {
   public buildEnvVariables: any;
+  public buildArgs: string[];
   public apiuser: AutoUser;
   constructor(scope: any, id: string, props: SecretStackProps) {
     super(scope, id, props);
@@ -17,13 +18,15 @@ export class SecretsStack extends cdk.Stack {
     const pgname = pgsecret?.secretName;
 
     checkSecretExists("dockerhub", (res: any) => {
-      if (!res)
+      if (res && res === false) {
         generateSecrets("dockerhub", "username", "password", _SETTINGS.dockerhub.username, _SETTINGS.dockerhub.password, (result: any) => {
           console.log(result);
         });
+      }
     });
+
     checkSecretExists("jwt", (res: any) => {
-      if (!res) {
+      if (res && res === false) {
         const jwtsecret = generatePassword(20, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@-#$");
         const jwtsecretkey = generatePassword(20, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@-#$");
         generateSecrets("jwt", "secret", "secretkey", jwtsecret, jwtsecretkey, (result: any) => {
@@ -52,6 +55,8 @@ export class SecretsStack extends cdk.Stack {
       ["JWT_SECRET"]: { value: "jwt:secret", type: codebuild.BuildEnvironmentVariableType.SECRETS_MANAGER },
       ["JWT_SECRETKEY"]: { value: "jwt:secretkey", type: codebuild.BuildEnvironmentVariableType.SECRETS_MANAGER },
     };
+
+    this.buildArgs = Object.keys(this.buildEnvVariables);
   }
 }
 

@@ -15,7 +15,7 @@ const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_
 
 const buckets: { name: string; stack: BucketStack }[] = [];
 _SETTINGS.config.bucketnames.forEach((bucket: string) => {
-  const buck = new BucketStack(app, "CDKBuckets" + bucket, { env: env, functions: _FUNCTIONS, bucket: bucket });
+  const buck = new BucketStack(app, "CDKBuckets" + _FUNCTIONS.cleanseBucketName(bucket), { env: env, functions: _FUNCTIONS, bucket: bucket });
   buckets.push({ name: bucket, stack: buck });
 });
 
@@ -27,7 +27,7 @@ _SETTINGS.config.dynamodbtables.forEach((table: any) => {
 
 const infrastructure = new InfrastructureStack(app, "InfrastructureStack", { env });
 const spa = _SETTINGS.config.spa_app;
-const frontend = new SPAPipelines(app, "SPAPipelines-" + spa.name, {
+const frontend = new SPAPipelines(app, "SPAPipelines-" + spa.name.split("_").join(""), {
   env: env,
   domainName: spa.domainName,
   siteSubDomain: spa.siteSubDomain,

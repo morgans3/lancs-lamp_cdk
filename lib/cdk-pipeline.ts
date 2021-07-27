@@ -29,6 +29,7 @@ export class CDKPipeline extends cdk.Construct {
       roleName: "ecsTaskExecutionRole",
     });
     const buildEnvVariables = secret.buildEnvVariables;
+    const buildArgs = secret.buildArgs;
 
     const bucket = new s3.Bucket(this, "Pipeline_Bucket-" + id, {
       versioned: false,
@@ -58,7 +59,7 @@ export class CDKPipeline extends cdk.Construct {
           commands: ["eval $(aws ecr get-login --no-include-email --region eu-west-2 --registry-ids 334848134567)"],
         },
         build: {
-          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build " + teststatement + getBuildArgs(buildEnvVariables) + " -t " + repoName + ":" + branchName + " ."],
+          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build " + teststatement + getBuildArgs(buildArgs) + " -t " + repoName + ":" + branchName + " ."],
         },
         post_build: {
           commands: postbuildcommand,
@@ -103,7 +104,7 @@ export class CDKPipeline extends cdk.Construct {
           commands: ["eval $(aws ecr get-login --no-include-email --region eu-west-2 --registry-ids 334848134567)"],
         },
         build: {
-          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build -f Dockerfile.test " + getBuildArgs(buildEnvVariables) + " -t " + repoName + ":" + branchName + " ."],
+          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build -f Dockerfile.test " + getBuildArgs(buildArgs) + " -t " + repoName + ":" + branchName + " ."],
         },
       },
       reports: {
