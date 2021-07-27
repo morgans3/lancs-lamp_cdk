@@ -1,13 +1,14 @@
 import * as cdk from "@aws-cdk/core";
 import * as elbv2 from "@aws-cdk/aws-elasticloadbalancingv2";
 import * as wafv2 from "@aws-cdk/aws-wafv2";
+import { LoadBalancerStackProps } from "../_models/models";
 
 export class CDKLoadBalancer extends cdk.Construct {
   public readonly loadbalancer: elbv2.ApplicationLoadBalancer;
   public readonly loadbalancer443: elbv2.ApplicationListener;
   public readonly defaultTargetGroup: elbv2.ApplicationTargetGroup;
 
-  constructor(scope: any, id: string, props?: any) {
+  constructor(scope: any, id: string, props: LoadBalancerStackProps) {
     super(scope, id);
 
     this.loadbalancer = new elbv2.ApplicationLoadBalancer(this, "LANCSLAMP-ALB" + props.branch, {

@@ -10,15 +10,19 @@ import * as secrets from "@aws-cdk/aws-cloudfront/node_modules/@aws-cdk/core/lib
 import * as ecs from "@aws-cdk/aws-ecs";
 import * as s3 from "@aws-cdk/aws-s3";
 import { SecretsStack } from "./cdk-secrets";
+import { PipelineStackProps } from "../_models/models";
+import * as kms from "@aws-cdk/aws-kms";
 
 export class CDKPipeline extends cdk.Construct {
   public build: any;
-  constructor(scope: cdk.Construct, id: string, props: any) {
+  constructor(scope: cdk.Construct, id: string, props: PipelineStackProps) {
     super(scope, id);
 
     const service: ecs.IBaseService = props.service;
     const secret: SecretsStack = props.secrets;
-
+    const buildKey = new kms.Key(this, "BuildKMS");
+    const repoName = props.application.name;
+    const branchName = props.application.branch;
     const codebuildRole = new iam.Role(this, "CodePipelineRole", {
       assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
       description: "Role for handling Codepipeline",
@@ -37,7 +41,7 @@ export class CDKPipeline extends cdk.Construct {
     const buildArtifact = new codepipeline.Artifact();
     const accountnum = process.env.CDK_DEFAULT_ACCOUNT;
     const region = process.env.CDK_DEFAULT_REGION;
-    let postbuildcommand = ["docker tag " + props.repoName + ":" + props.branchName + " " + accountnum + ".dkr.ecr." + region + ".amazonaws.com/" + props.repoName + ":" + props.branchName, "docker push " + accountnum + ".dkr.ecr." + region + ".amazonaws.com/" + props.repoName + ":" + props.branchName, `printf '[{"name":"` + props.repoName + `","imageUri":"` + accountnum + `.dkr.ecr.` + region + `.amazonaws.com/` + props.repoName + `:` + props.branchName + `}]' > imagedefinitions.json`];
+    let postbuildcommand = ["docker tag " + repoName + ":" + branchName + " " + accountnum + ".dkr.ecr." + region + ".amazonaws.com/" + repoName + ":" + branchName, "docker push " + accountnum + ".dkr.ecr." + region + ".amazonaws.com/" + repoName + ":" + branchName, `printf '[{"name":"` + repoName + `","imageUri":"` + accountnum + `.dkr.ecr.` + region + `.amazonaws.com/` + repoName + `:` + branchName + `}]' > imagedefinitions.json`];
     let reportstatement = {
       jest_reports: { files: ["test-report-directory/report-filename.xml"], "file-format": "JUNITXML" },
     };
@@ -54,7 +58,7 @@ export class CDKPipeline extends cdk.Construct {
           commands: ["eval $(aws ecr get-login --no-include-email --region eu-west-2 --registry-ids 334848134567)"],
         },
         build: {
-          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build " + teststatement + getBuildArgs(props.envPipe.buildArgs) + " -t " + props.repoName + ":" + props.branchName + " ."],
+          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build " + teststatement + getBuildArgs(buildEnvVariables) + " -t " + repoName + ":" + branchName + " ."],
         },
         post_build: {
           commands: postbuildcommand,
@@ -66,7 +70,7 @@ export class CDKPipeline extends cdk.Construct {
       },
     };
 
-    this.build = new codebuild.PipelineProject(this, props.repoName + "-" + props.env, {
+    this.build = new codebuild.PipelineProject(this, repoName + "-" + props.env, {
       bucket: bucket,
       environmentVariables: buildEnvVariables,
       buildSpec: codebuild.BuildSpec.fromObject(buildSpecObject),
@@ -76,14 +80,14 @@ export class CDKPipeline extends cdk.Construct {
         computeType: codebuild.ComputeType.MEDIUM,
       },
       timeout: Duration.minutes(15),
-      encryptionKey: props.buildKey,
+      encryptionKey: buildKey,
       logging: {
         cloudWatch: {
           enabled: true,
-          logGroup: new logs.LogGroup(this, props.repoName + "-" + props.env + "LogGroup"),
+          logGroup: new logs.LogGroup(this, repoName + "-" + props.env + "LogGroup"),
         },
       },
-      projectName: props.repoName + "-" + props.env,
+      projectName: repoName + "-" + props.env,
       role: codebuildRole,
     });
 
@@ -99,7 +103,7 @@ export class CDKPipeline extends cdk.Construct {
           commands: ["eval $(aws ecr get-login --no-include-email --region eu-west-2 --registry-ids 334848134567)"],
         },
         build: {
-          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build -f Dockerfile.test " + getBuildArgs(props.envPipe.buildArgs) + " -t " + props.repoName + ":" + props.branchName + " ."],
+          commands: ["docker login -u $dockerhub_username -p $dockerhub_password", "docker build -f Dockerfile.test " + getBuildArgs(buildEnvVariables) + " -t " + repoName + ":" + branchName + " ."],
         },
       },
       reports: {
@@ -109,7 +113,7 @@ export class CDKPipeline extends cdk.Construct {
         files: ["imagedefinitions.json"],
       },
     };
-    const testbuild = new codebuild.PipelineProject(this, props.repoName + "-Test", {
+    const testbuild = new codebuild.PipelineProject(this, repoName + "-Test", {
       bucket: bucket,
       environmentVariables: buildEnvVariables,
       buildSpec: codebuild.BuildSpec.fromObject(testBuildSpec),
@@ -118,20 +122,20 @@ export class CDKPipeline extends cdk.Construct {
         privileged: true,
       },
       timeout: Duration.minutes(10),
-      encryptionKey: props.buildKey,
+      encryptionKey: buildKey,
       logging: {
         cloudWatch: {
           enabled: true,
-          logGroup: new logs.LogGroup(this, props.repoName + "-Test" + "LogGroup"),
+          logGroup: new logs.LogGroup(this, repoName + "-Test" + "LogGroup"),
         },
       },
-      projectName: props.repoName + "-Test",
+      projectName: repoName + "-Test",
       role: codebuildRole,
     });
 
-    const pipe = new codepipeline.Pipeline(this, props.repoName + "-" + props.env + "Pipeline", {
+    const pipe = new codepipeline.Pipeline(this, repoName + "-" + props.env + "Pipeline", {
       artifactBucket: bucket,
-      pipelineName: props.repoName + "-" + props.env,
+      pipelineName: repoName + "-" + props.env,
       role: codebuildRole,
       stages: [
         {

@@ -4,12 +4,13 @@ import * as rds from "@aws-cdk/aws-rds";
 import * as iam from "@aws-cdk/aws-iam";
 import { generateSecrets, checkSecretExists } from "../sdk/generateSecrets";
 import { _SETTINGS } from "./config";
+import { SecretStackProps } from "../_models/models";
 const crypto = require("crypto");
 
 export class SecretsStack extends cdk.Stack {
   public buildEnvVariables: any;
   public apiuser: AutoUser;
-  constructor(scope: any, id: string, props: any) {
+  constructor(scope: any, id: string, props: SecretStackProps) {
     super(scope, id, props);
     const pg: rds.DatabaseInstance = props.rds.dbInstance;
     const pgsecret = pg.secret;
@@ -34,7 +35,7 @@ export class SecretsStack extends cdk.Stack {
     this.apiuser = new AutoUser(this, "API_User");
 
     let profile = "Dev";
-    if (props.settings.config.isProduction) profile = "Prod";
+    if (_SETTINGS.config.isProduction) profile = "Prod";
 
     this.buildEnvVariables = {
       ["AWSPROFILE"]: { value: profile, type: codebuild.BuildEnvironmentVariableType.PLAINTEXT },

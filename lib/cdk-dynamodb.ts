@@ -1,10 +1,11 @@
 import cdk = require("@aws-cdk/core");
 import dynamodb = require("@aws-cdk/aws-dynamodb");
+import { DynamoDBStackProps } from "../_models/models";
 
 export class DynamoDBTable extends cdk.Stack {
   public readonly dynamoTable: dynamodb.Table;
 
-  constructor(scope: any, id: string, props: any) {
+  constructor(scope: any, id: string, props: DynamoDBStackProps) {
     super(scope, id, props);
 
     const primarykey = props.tab.fields.filter((x: any) => x.key === "primary");

@@ -2,9 +2,10 @@
 import * as ec2 from "@aws-cdk/aws-ec2";
 import dynamodb = require("@aws-cdk/aws-dynamodb");
 import { _LOCAL } from "./localconfig";
+import { AppSettings, DynamoDBConfig, GlobalConfig } from "../_models/models";
 
-const standardbuckets = ["lancs-lamp-results-landing-" + _LOCAL.mydomain];
-const spa_app = {
+const standardbuckets: string[] = ["lancs-lamp-results-landing-" + _LOCAL.mydomain];
+const spa_app: AppSettings = {
   name: "lamp_lancs",
   domainName: _LOCAL.mydomain,
   siteSubDomain: "www",
@@ -12,8 +13,9 @@ const spa_app = {
   githubrepo: "https://github.com/morgans3/lancs-lamp_frontend.git",
   repo: "lancs-lamp_frontend",
   branch: "main",
+  port: "80",
 };
-const api_app = {
+const api_app: AppSettings = {
   name: "lamp_lancs_api",
   domainName: _LOCAL.mydomain,
   siteSubDomain: "api",
@@ -27,7 +29,7 @@ const api_app = {
   desired: 2,
 };
 
-const standardDynamoTables = [
+const standardDynamoTables: DynamoDBConfig[] = [
   {
     name: "users",
     fields: [
@@ -58,7 +60,7 @@ const standardDynamoTables = [
   },
 ];
 
-export const _SETTINGS: any = {
+export const _SETTINGS: GlobalConfig = {
   config: {
     isProduction: false,
     domainName: _LOCAL.mydomain,
