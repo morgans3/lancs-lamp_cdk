@@ -2,11 +2,13 @@ import * as cdk from "@aws-cdk/core";
 import * as rds from "@aws-cdk/aws-rds";
 import * as ec2 from "@aws-cdk/aws-ec2";
 import { Duration } from "@aws-cdk/core";
+import { RDSStackProps } from "../_models/models";
+import { _SETTINGS } from "./config";
 
 export class RDSStack extends cdk.Stack {
   public dbInstance: rds.DatabaseInstance;
 
-  constructor(scope: cdk.App, id: string, props?: any) {
+  constructor(scope: cdk.App, id: string, props: RDSStackProps) {
     super(scope, id, props);
 
     const vpc = props.infrastructure.vpc;
@@ -15,7 +17,7 @@ export class RDSStack extends cdk.Stack {
       description: "Security Group for RDS Postgresql Instance supporting the Lancs LAMP Database",
       vpc: vpc,
     });
-    props.infrastructure.vpc.containerIPs.forEach((range: string) => {
+    _SETTINGS.config.containerIPs.forEach((range: string) => {
       secGroup.addIngressRule(ec2.Peer.ipv4(range), ec2.Port.tcp(5432), "Access from Containers");
     });
 
@@ -28,7 +30,7 @@ export class RDSStack extends cdk.Stack {
     this.dbInstance = new rds.DatabaseInstance(this, "RDSInstance", {
       vpc: vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE },
-      instanceType: props.settings.config.instanceType,
+      instanceType: _SETTINGS.config.instanceType,
       allowMajorVersionUpgrade: false,
       autoMinorVersionUpgrade: true,
       deleteAutomatedBackups: true,
@@ -44,7 +46,7 @@ export class RDSStack extends cdk.Stack {
       storageEncrypted: true,
       port: 5432,
       credentials: rds.Credentials.fromGeneratedSecret("postgres"),
-      deletionProtection: props.settings.config.isProduction,
+      deletionProtection: _SETTINGS.config.isProduction,
       databaseName: "lamps_lanc",
       maxAllocatedStorage: 100,
       allocatedStorage: 20,

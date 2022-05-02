@@ -7,7 +7,7 @@ AWS.config.update({
 let access = process.env.AWSPROFILE || "default";
 const credentials = new AWS.SharedIniFileCredentials({ profile: access });
 AWS.config.credentials = credentials;
-const secretsmanager = AWS.SecretsManager();
+const secretsmanager = new AWS.SecretsManager();
 
 export const generateSecrets = function (name: string, keyA: string, keyB: string, valueA: string, valueB: string, callback: any) {
   const params = {
@@ -28,6 +28,7 @@ export const checkSecretExists = function (name: string, callback: any) {
   secretsmanager.describeSecret(params, (err: any, data: any) => {
     if (err) callback(false);
     else {
+      console.log(data);
       if (data && data.ARN) callback(true);
       callback(false);
     }

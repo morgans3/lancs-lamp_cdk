@@ -8,16 +8,10 @@ import acm = require("@aws-cdk/aws-certificatemanager");
 import cdk = require("@aws-cdk/core");
 import targets = require("@aws-cdk/aws-route53-targets/lib");
 import codebuild = require("@aws-cdk/aws-codebuild");
-import { StackProps } from "@aws-cdk/core";
 import { Duration } from "@aws-cdk/aws-dynamodb/node_modules/@aws-cdk/core/lib/duration";
 import * as secrets from "@aws-cdk/aws-cloudfront/node_modules/@aws-cdk/core/lib/secret-value";
 import { _FUNCTIONS } from "./functions";
-
-export interface StaticSiteProps extends StackProps {
-  domainName: string;
-  siteSubDomain: string;
-  application: any;
-}
+import { StaticSiteProps } from "../_models/models";
 
 export class SPAPipelines extends cdk.Stack {
   constructor(scope: any, id: string, props: StaticSiteProps) {

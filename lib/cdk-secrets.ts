@@ -4,25 +4,29 @@ import * as rds from "@aws-cdk/aws-rds";
 import * as iam from "@aws-cdk/aws-iam";
 import { generateSecrets, checkSecretExists } from "../sdk/generateSecrets";
 import { _SETTINGS } from "./config";
+import { SecretStackProps } from "../_models/models";
 const crypto = require("crypto");
 
 export class SecretsStack extends cdk.Stack {
   public buildEnvVariables: any;
+  public buildArgs: string[];
   public apiuser: AutoUser;
-  constructor(scope: any, id: string, props: any) {
+  constructor(scope: any, id: string, props: SecretStackProps) {
     super(scope, id, props);
     const pg: rds.DatabaseInstance = props.rds.dbInstance;
     const pgsecret = pg.secret;
     const pgname = pgsecret?.secretName;
 
     checkSecretExists("dockerhub", (res: any) => {
-      if (!res)
+      if (res && res === false) {
         generateSecrets("dockerhub", "username", "password", _SETTINGS.dockerhub.username, _SETTINGS.dockerhub.password, (result: any) => {
           console.log(result);
         });
+      }
     });
+
     checkSecretExists("jwt", (res: any) => {
-      if (!res) {
+      if (res && res === false) {
         const jwtsecret = generatePassword(20, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@-#$");
         const jwtsecretkey = generatePassword(20, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@-#$");
         generateSecrets("jwt", "secret", "secretkey", jwtsecret, jwtsecretkey, (result: any) => {
@@ -34,7 +38,7 @@ export class SecretsStack extends cdk.Stack {
     this.apiuser = new AutoUser(this, "API_User");
 
     let profile = "Dev";
-    if (props.settings.config.isProduction) profile = "Prod";
+    if (_SETTINGS.config.isProduction) profile = "Prod";
 
     this.buildEnvVariables = {
       ["AWSPROFILE"]: { value: profile, type: codebuild.BuildEnvironmentVariableType.PLAINTEXT },
@@ -51,6 +55,8 @@ export class SecretsStack extends cdk.Stack {
       ["JWT_SECRET"]: { value: "jwt:secret", type: codebuild.BuildEnvironmentVariableType.SECRETS_MANAGER },
       ["JWT_SECRETKEY"]: { value: "jwt:secretkey", type: codebuild.BuildEnvironmentVariableType.SECRETS_MANAGER },
     };
+
+    this.buildArgs = Object.keys(this.buildEnvVariables);
   }
 }
 

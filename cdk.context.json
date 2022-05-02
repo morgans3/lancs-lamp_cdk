@@ -1,0 +1,11 @@
+{
+  "availability-zones:account=397949465614:region=eu-west-2": [
+    "eu-west-2a",
+    "eu-west-2b",
+    "eu-west-2c"
+  ],
+  "hosted-zone:account=397949465614:domainName=stewartmorganv2.com:region=eu-west-2": {
+    "Id": "/hostedzone/Z098395730LS94IKNZQ91",
+    "Name": "stewartmorganv2.com."
+  }
+}

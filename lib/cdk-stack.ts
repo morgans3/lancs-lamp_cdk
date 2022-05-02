@@ -8,12 +8,14 @@ import * as iam from "@aws-cdk/aws-iam";
 import { CDKLoadBalancer } from "./cdk-loadbalancer";
 import * as acm from "@aws-cdk/aws-certificatemanager";
 import route53 = require("@aws-cdk/aws-route53");
+import { CdkStackProps } from "../_models/models";
+import { _SETTINGS } from "./config";
 
 export class CdkStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props?: any) {
+  constructor(scope: cdk.Construct, id: string, props: CdkStackProps) {
     super(scope, id, props);
 
-    const repo = new ecr.Repository(this, "API-ECR-Repo", { repositoryName: props.settings.config.api_app.name });
+    const repo = new ecr.Repository(this, "API-ECR-Repo", { repositoryName: _SETTINGS.config.api_app.name });
     repo.addLifecycleRule({ tagPrefixList: ["dev"], maxImageCount: 99 });
     repo.addLifecycleRule({ tagPrefixList: ["main"], maxImageCount: 99 });
     repo.addLifecycleRule({ maxImageAge: cdk.Duration.days(30) });
@@ -24,19 +26,15 @@ export class CdkStack extends cdk.Stack {
       actions: ["ecr:BatchCheckLayerAvailability", "ecr:BatchGetImage", "ecr:DescribeImages", "ecr:DescribeRepositories", "ecr:GetDownloadUrlForLayer", "ecr:GetLifecyclePolicy", "ecr:GetLifecyclePolicyPreview", "ecr:GetRepositoryPolicy", "ecr:InitiateLayerUpload", "ecr:ListImages"],
     });
     repo.addToResourcePolicy(statement);
-    const pipeline = new CDKPipeline(this, "API-Pipeline", { secrets: props.secrets });
-
     const capacity = {
       min: 0,
       max: 2,
       desired: 1,
-      startHour: null,
-      stopHour: null,
     };
     const ecscluster = new ECSCluster(this, "API-ECSCluster", { name: "API-ECS-Cluster", infrastructure: props.infrastructure, capacity });
     const secGroup = new ec2.SecurityGroup(this, "secGroup", {
       vpc: props.infrastructure.vpc,
-      securityGroupName: "SG-LANCSLAMP-LB-" + props.settings.config.api_app.branch,
+      securityGroupName: "SG-LANCSLAMP-LB-" + _SETTINGS.config.api_app.branch,
       description: "HTTP/S Access to ECS",
       allowAllOutbound: true,
     });
@@ -45,10 +43,17 @@ export class CdkStack extends cdk.Stack {
       secGroup: secGroup,
       repo: repo,
       cluster: ecscluster.cluster,
-      values: props.settings.config.api_app,
+      values: _SETTINGS.config.api_app,
     });
-    const zone = route53.HostedZone.fromLookup(this, "Zone", { domainName: props.domainName });
-    const siteDomain = "api." + props.domainName;
+    const pipeline = new CDKPipeline(this, "API-Pipeline", {
+      service: defaultcontainer.service,
+      buildArgs: props.secrets.buildEnvVariables,
+      application: _SETTINGS.config.api_app,
+      secrets: props.secrets,
+    });
+
+    const zone = route53.HostedZone.fromLookup(this, "Zone", { domainName: _SETTINGS.config.domainName });
+    const siteDomain = "api." + _SETTINGS.config.domainName;
     const certificateArn = new acm.DnsValidatedCertificate(this, "SiteCertificate", {
       domainName: siteDomain,
       hostedZone: zone,

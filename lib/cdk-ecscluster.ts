@@ -5,10 +5,11 @@ import ec2 = require("@aws-cdk/aws-ec2");
 import * as ecs from "@aws-cdk/aws-ecs";
 import * as asg from "@aws-cdk/aws-autoscaling";
 import { _SETTINGS } from "./config";
+import { ECSCluserStackProps } from "../_models/models";
 
 export class ECSCluster extends cdk.Construct {
   public readonly cluster: ecs.Cluster;
-  constructor(scope: cdk.Construct, id: string, props: any) {
+  constructor(scope: cdk.Construct, id: string, props: ECSCluserStackProps) {
     super(scope, id);
     const vpc: ec2.Vpc = props.infrastructure.vpc;
     this.cluster = new ecs.Cluster(this, "ECS-LANCSLAMPS-" + props.name, {
